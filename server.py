@@ -1,6 +1,7 @@
 # This is a project to learn server and socket in python
 import socket
-# import socket
+# This project only deal with one client
+
 from socket import *
 import sys
 from Database import Database
@@ -17,20 +18,37 @@ try:
 
     while True:
         conn, addr = server.accept()  # create another socket to communicate with client
-        userID = conn.recv(1024).decode('utf-8')  # decode bye to string
-        userPW = conn.recv(1024).decode('utf-8')  # decode bye to string
-        pw = db.getpassword(userID)
-        print(pw)
-        print(userPW)
-        if pw == userPW:
-            print(userID + " is logged in")
-            greeting = "Hello," + userID
-            conn.send(greeting.encode('UTF-8'))
-        else:
-            print("Invalid attempt was made")
-            conn.send("Invalid input".encode('UTF-8'))
-except socket.error as err:
-    print('Socket Error: ', err)
+        print("User is connected")
+        while True:
+            data = conn.recv(1024).decode('UTF-8')  # while connected to a user
+            if data:
+                if data == "1":
+                    id1 = conn.recv(1024).decode('UTF-8')
+                    pw1 = conn.recv(1024).decode('UTF-8')
+                    b = Database.sign_up(db, id1, pw1)
+                    if b:
+                        print("Sign up success, need to be approved")
+                        conn.send("Successfully added to database, wait until approved".encode('UTF-8'))
+                    else:
+                        print("Sign up failed")
+                        conn.send("Use other userName".encode('UTF-8'))
+
+                if data == '2':
+                    id1 = conn.recv(1024).decode('UTF-8')
+                    pw1 = conn.recv(1024).decode('UTF-8')
+                    get_pass = db.getpassword(id1)
+                    if get_pass is None:
+                        conn.send("No id on database".encode('UTF-8'))
+                    if pw1 == get_pass:
+                        conn.send("Hi user".encode('UTF-8'))
+                    else:
+                        conn.send("incorrect password".encode('UTF-8'))
+            else:
+                break
+        print("disconnected from a user")
+        conn.close()
+except EOFError:
+    print("Error on System")
     sys.exit()
 finally:
     server.close()
